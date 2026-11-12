@@ -1,0 +1,45 @@
+@model List<VehiculoDto>
+@{ ViewData["Title"] = User.IsInRole(Roles.Cliente) ? "Mis vehículos" : "Vehículos"; }
+<div class="encabezado">
+    <div><h1>@ViewData["Title"]</h1><p class="sub">@Model.Count vehículos</p></div>
+    @if (User.EsAlguno(Roles.Administrador, Roles.Recepcionista))
+    {
+        <a asp-action="Crear" class="btn btn-ambar"><i class="bi bi-plus-lg"></i> Nuevo vehículo</a>
+    }
+</div>
+<div class="panel">
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-md-6"><input name="buscar" value="@ViewBag.Buscar" class="form-control" placeholder="Placa, marca o modelo" /></div>
+        <div class="col-auto"><button class="btn btn-outline-primary"><i class="bi bi-search"></i> Buscar</button></div>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th></th><th>Placa</th><th>Vehículo</th><th>Color</th><th>Chasis</th><th>Propietario</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var v in Model)
+            {
+                <tr>
+                    <td style="width:70px">
+                        @if (!string.IsNullOrEmpty(v.FotoRuta)) { <img src="@Ui.Img(v.FotoRuta)" alt="" style="width:60px;height:40px;object-fit:cover;border-radius:4px" /> }
+                        else { <i class="bi bi-car-front text-muted fs-4"></i> }
+                    </td>
+                    <td><a asp-action="Detalle" asp-route-id="@v.Id" class="fw-semibold">@v.Placa</a></td>
+                    <td>@v.Marca @v.Modelo @v.Anio</td>
+                    <td>@v.Color</td>
+                    <td class="mono">@v.NumeroChasis</td>
+                    <td>@v.ClienteNombre</td>
+                    <td class="text-end text-nowrap">
+                        @if (User.EsAlguno(Roles.Administrador, Roles.Recepcionista))
+                        {
+                            <a asp-action="Editar" asp-route-id="@v.Id" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                            <form asp-action="Eliminar" asp-route-id="@v.Id" method="post" class="d-inline" data-confirmar="¿Eliminar el vehículo @v.Placa?">
+                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

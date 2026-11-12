@@ -1,0 +1,20 @@
+# Compilación
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Base de datos SQLite (las migraciones SÍ se suben)
+*.db
+*.db-shm
+*.db-wal
+
+# Imágenes subidas y logs generados en ejecución
+AutoFix.Api/wwwroot/uploads/*
+!AutoFix.Api/wwwroot/uploads/.gitkeep
+AutoFix.Api/logs/
+
+# Secretos locales
+appsettings.*.local.json
+.env

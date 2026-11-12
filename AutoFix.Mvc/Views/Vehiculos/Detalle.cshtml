@@ -1,0 +1,67 @@
+@model VehiculoDto
+@{
+    ViewData["Title"] = Model.Placa;
+    var ordenes = (List<OrdenDto>)ViewBag.Ordenes;
+    var puedeEditar = User.EsAlguno(Roles.Administrador, Roles.Recepcionista);
+}
+<div class="encabezado">
+    <div><h1>@Model.Placa</h1><p class="sub">@Model.Marca @Model.Modelo @Model.Anio · @Model.Color</p></div>
+    <div class="d-flex gap-2">
+        @if (puedeEditar)
+        {
+            <a asp-action="Editar" asp-route-id="@Model.Id" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Editar</a>
+        }
+        @if (User.EsAlguno(Roles.Administrador, Roles.Recepcionista))
+        {
+            <a asp-controller="Ordenes" asp-action="Crear" asp-route-vehiculoId="@Model.Id" class="btn btn-ambar"><i class="bi bi-clipboard-plus"></i> Nueva orden</a>
+        }
+    </div>
+</div>
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="panel">
+            @if (!string.IsNullOrEmpty(Model.FotoRuta)) { <img src="@Ui.Img(Model.FotoRuta)" alt="Foto del vehículo" class="foto-principal" /> }
+            else { <div class="sin-foto"><span><i class="bi bi-camera"></i> Sin fotografía</span></div> }
+            @if (puedeEditar)
+            {
+                <form asp-action="Foto" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data" class="mt-3">
+                    <div class="input-group">
+                        <input type="file" name="foto" class="form-control" accept=".jpg,.jpeg,.png" />
+                        <button class="btn btn-outline-primary">Subir</button>
+                    </div>
+                    <div class="aviso-archivo text-warning small"></div>
+                </form>
+            }
+            <dl class="mt-3 mb-0">
+                <dt>Propietario</dt>
+                <dd>
+                    @if (User.EsEmpleado()) { <a asp-controller="Clientes" asp-action="Detalle" asp-route-id="@Model.ClienteId">@Model.ClienteNombre</a> }
+                    else { <span>@Model.ClienteNombre</span> }
+                </dd>
+                <dt>Chasis</dt><dd class="mono">@Model.NumeroChasis</dd>
+            </dl>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="panel">
+            <h2>Historial de reparaciones</h2>
+            @if (!ordenes.Any()) { <p class="text-muted mb-0">Sin órdenes.</p> }
+            else
+            {
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Orden</th><th>Ingreso</th><th>Servicio</th><th>Estado</th></tr></thead>
+                    <tbody>
+                    @foreach (var o in ordenes)
+                    {
+                        <tr>
+                            <td><a asp-controller="Ordenes" asp-action="Detalle" asp-route-id="@o.Id">@o.NumeroOrden</a></td>
+                            <td>@Ui.FechaCorta(o.FechaIngreso)</td><td>@o.TipoServicio</td>
+                            <td><span class="estado @Ui.ClaseEstado(o.Estado)">@o.Estado.Texto()</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>

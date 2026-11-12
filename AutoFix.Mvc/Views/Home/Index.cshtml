@@ -1,0 +1,96 @@
+@model DashboardDto
+@{
+    ViewData["Title"] = "Dashboard";
+    var esCliente = User.IsInRole(Roles.Cliente);
+}
+<div class="encabezado">
+    <div>
+        <h1>Hola, @User.Nombre()</h1>
+        <p class="sub">@(esCliente ? "Este es el estado de sus vehículos en el taller." : "Resumen del taller hoy, " + DateTime.Now.ToString("dddd d 'de' MMMM", new System.Globalization.CultureInfo("es")) + ".")</p>
+    </div>
+    @if (User.EsAlguno(Roles.Administrador, Roles.Recepcionista))
+    {
+        <a asp-controller="Ordenes" asp-action="Crear" class="btn btn-ambar"><i class="bi bi-plus-lg"></i> Nueva orden</a>
+    }
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="cifra"><div class="valor">@Model.OrdenesActivas</div><div class="etiqueta">Órdenes activas</div></div></div>
+    <div class="col-6 col-lg-3"><div class="cifra ambar"><div class="valor">@Model.PresupuestosPendientes</div><div class="etiqueta">Pendientes de aprobación</div></div></div>
+    <div class="col-6 col-lg-3"><div class="cifra"><div class="valor">@Model.OrdenesFinalizadasMes</div><div class="etiqueta">Finalizadas este mes</div></div></div>
+    <div class="col-6 col-lg-3">
+        @if (esCliente)
+        {
+            <div class="cifra"><div class="valor">@Model.TotalVehiculos</div><div class="etiqueta">Mis vehículos</div></div>
+        }
+        else
+        {
+            <div class="cifra"><div class="valor">@Ui.Dinero(Model.IngresosAprobadosMes)</div><div class="etiqueta">Presupuestos aprobados (mes)</div></div>
+        }
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="panel h-100">
+            <h2>@(esCliente ? "Mis reparaciones" : "Órdenes recientes")</h2>
+            @if (!Model.OrdenesRecientes.Any())
+            {
+                <p class="text-muted mb-0">No hay órdenes registradas.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead><tr><th>Orden</th><th>Vehículo</th><th>Servicio</th><th>Estado</th><th>Entrega estimada</th></tr></thead>
+                        <tbody>
+                        @foreach (var o in Model.OrdenesRecientes)
+                        {
+                            <tr>
+                                <td><a asp-controller="Ordenes" asp-action="Detalle" asp-route-id="@o.Id" class="fw-semibold">@o.NumeroOrden</a></td>
+                                <td>@o.VehiculoDescripcion</td>
+                                <td>@o.TipoServicio</td>
+                                <td><span class="estado @Ui.ClaseEstado(o.Estado)">@o.Estado.Texto()</span></td>
+                                <td>@Ui.Fecha(o.FechaEstimadaFin)</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="panel">
+            <h2>Órdenes por estado</h2>
+            <ul class="list-unstyled mb-0">
+                @foreach (var e in Model.OrdenesPorEstado)
+                {
+                    <li class="d-flex justify-content-between border-bottom py-1"><span>@e.Key</span><strong>@e.Value</strong></li>
+                }
+            </ul>
+        </div>
+        @if (!esCliente)
+        {
+            <div class="panel">
+                <h2><i class="bi bi-exclamation-triangle text-warning"></i> Stock mínimo</h2>
+                @if (!Model.RepuestosBajoStock.Any())
+                {
+                    <p class="text-muted mb-0">Todo el inventario está sobre el mínimo.</p>
+                }
+                @foreach (var r in Model.RepuestosBajoStock)
+                {
+                    <div class="d-flex justify-content-between">
+                        <a asp-controller="Inventario" asp-action="Detalle" asp-route-id="@r.Id">@r.Nombre</a>
+                        <span class="stock-bajo">@r.Existencias / @r.StockMinimo</span>
+                    </div>
+                }
+            </div>
+            <div class="panel">
+                <div class="d-flex justify-content-between"><span>Clientes</span><strong>@Model.TotalClientes</strong></div>
+                <div class="d-flex justify-content-between"><span>Vehículos</span><strong>@Model.TotalVehiculos</strong></div>
+                <div class="d-flex justify-content-between"><span>Mecánicos activos</span><strong>@Model.MecanicosActivos</strong></div>
+            </div>
+        }
+    </div>
+</div>

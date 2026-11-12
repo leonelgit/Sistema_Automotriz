@@ -1,0 +1,22 @@
+@model ClienteSaveDto
+@{
+    int? id = ViewBag.Id;
+    ViewData["Title"] = id.HasValue ? "Editar cliente" : "Nuevo cliente";
+}
+<div class="encabezado"><h1>@ViewData["Title"]</h1></div>
+<div class="panel" style="max-width:760px">
+    <form asp-action="@(id.HasValue ? "Editar" : "Crear")" asp-route-id="@id" method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+        <div class="row g-3">
+            <div class="col-12"><label asp-for="NombreCompleto" class="form-label">Nombre completo</label><input asp-for="NombreCompleto" class="form-control" /><span asp-validation-for="NombreCompleto" class="text-danger small"></span></div>
+            <div class="col-md-6"><label asp-for="Dui" class="form-label">DUI o identificación</label><input asp-for="Dui" class="form-control" placeholder="01234567-8" /><span asp-validation-for="Dui" class="text-danger small"></span></div>
+            <div class="col-md-6"><label asp-for="Telefono" class="form-label">Teléfono</label><input asp-for="Telefono" class="form-control" /><span asp-validation-for="Telefono" class="text-danger small"></span></div>
+            <div class="col-md-6"><label asp-for="Correo" class="form-label">Correo electrónico</label><input asp-for="Correo" class="form-control" /><span asp-validation-for="Correo" class="text-danger small"></span></div>
+            <div class="col-md-6"><label asp-for="Direccion" class="form-label">Dirección</label><input asp-for="Direccion" class="form-control" /></div>
+        </div>
+        <div class="mt-4 d-flex gap-2">
+            <button class="btn btn-primary">Guardar</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,27 @@
+@model EditarOrdenRequest
+@{
+    var orden = (OrdenDetalleDto)ViewBag.Orden;
+    ViewData["Title"] = "Editar " + orden.NumeroOrden;
+}
+<div class="encabezado"><div><h1>Editar @orden.NumeroOrden</h1><p class="sub">@orden.VehiculoDescripcion · @orden.ClienteNombre</p></div></div>
+<div class="panel" style="max-width:820px">
+    <form asp-action="Editar" asp-route-id="@orden.Id" method="post">
+        <!-- Token de concurrencia: si otro usuario modifica la orden antes, la API responde 409 -->
+        <input type="hidden" asp-for="Version" />
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+        <div class="mb-3">
+            <label asp-for="DescripcionProblema" class="form-label">Descripción del problema</label>
+            <textarea asp-for="DescripcionProblema" rows="3" class="form-control"></textarea>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Diagnostico" class="form-label">Diagnóstico</label>
+            <textarea asp-for="Diagnostico" rows="5" class="form-control" placeholder="Hallazgos del mecánico"></textarea>
+        </div>
+        <div class="mb-3" style="max-width:300px">
+            <label asp-for="FechaEstimadaFin" class="form-label">Fecha estimada de finalización</label>
+            <input asp-for="FechaEstimadaFin" type="datetime-local" value="@Ui.ParaInput(Model.FechaEstimadaFin)" class="form-control" />
+        </div>
+        <button class="btn btn-primary">Guardar</button>
+        <a asp-action="Detalle" asp-route-id="@orden.Id" class="btn btn-outline-secondary">Cancelar</a>
+    </form>
+</div>

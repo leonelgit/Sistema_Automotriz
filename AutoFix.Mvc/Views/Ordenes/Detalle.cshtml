@@ -1,0 +1,287 @@
+@model OrdenDetalleDto
+@{
+    ViewData["Title"] = Model.NumeroOrden;
+    var mecanicos = ViewBag.Mecanicos as List<MecanicoDto>;
+    var esEmpleado = User.EsEmpleado();
+    var esJefe = User.EsAlguno(Roles.Administrador, Roles.Supervisor);
+    var puedeEntregar = User.EsAlguno(Roles.Administrador, Roles.Recepcionista, Roles.Supervisor);
+    var activa = Model.Estado != EstadoOrden.Entregado && Model.Estado != EstadoOrden.Cancelado;
+    var indiceActual = Array.IndexOf(Ui.Flujo, Model.Estado);
+    var inicioSugerido = DateTime.Now.AddMinutes(30 - DateTime.Now.Minute % 30).AddSeconds(-DateTime.Now.Second);
+}
+
+<div class="encabezado">
+    <div>
+        <h1>@Model.NumeroOrden <span class="estado @Ui.ClaseEstado(Model.Estado) align-middle fs-6">@Model.Estado.Texto()</span></h1>
+        <p class="sub">@Model.VehiculoDescripcion · @Model.ClienteNombre · @Model.TipoServicio</p>
+    </div>
+    <div class="d-flex gap-2">
+        @if (esEmpleado && activa && Model.Estado != EstadoOrden.Finalizado)
+        {
+            <a asp-action="Editar" asp-route-id="@Model.Id" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Diagnóstico / editar</a>
+        }
+        @if (User.IsInRole(Roles.Administrador))
+        {
+            <form asp-action="Eliminar" asp-route-id="@Model.Id" method="post" data-confirmar="¿Eliminar definitivamente esta orden?">
+                <button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (Model.Estado != EstadoOrden.Cancelado)
+{
+    <div class="panel">
+        <ol class="progreso">
+            @for (var i = 0; i < Ui.Flujo.Length; i++)
+            {
+                var clase = i < indiceActual ? "hecho" : i == indiceActual ? "hecho actual" : "";
+                <li class="@clase">@Ui.Flujo[i].Texto()</li>
+            }
+        </ol>
+    </div>
+}
+
+<div class="row g-3 mt-0">
+    <div class="col-xl-7">
+        <div class="panel">
+            <h2>Datos de la orden</h2>
+            <div class="row">
+                <div class="col-sm-6">
+                    <dl>
+                        <dt>Fecha de ingreso</dt><dd>@Ui.Fecha(Model.FechaIngreso)</dd>
+                        <dt>Fecha estimada de finalización</dt><dd>@Ui.Fecha(Model.FechaEstimadaFin)</dd>
+                        <dt>Finalizada</dt><dd>@Ui.Fecha(Model.FechaFinalizacion)</dd>
+                    </dl>
+                </div>
+                <div class="col-sm-6">
+                    <dl>
+                        <dt>Mecánico asignado</dt><dd>@(Model.MecanicoNombre ?? "Sin asignar")</dd>
+                        <dt>Registrada por</dt><dd>@Model.CreadoPor</dd>
+                        <dt>Vehículo</dt><dd><a asp-controller="Vehiculos" asp-action="Detalle" asp-route-id="@Model.VehiculoId">@Model.VehiculoDescripcion</a></dd>
+                    </dl>
+                </div>
+            </div>
+            <dl class="mb-0">
+                <dt>Descripción del problema</dt><dd style="white-space:pre-line">@Model.DescripcionProblema</dd>
+                <dt>Diagnóstico</dt><dd style="white-space:pre-line" class="mb-0">@(string.IsNullOrWhiteSpace(Model.Diagnostico) ? "Pendiente" : Model.Diagnostico)</dd>
+            </dl>
+        </div>
+
+        <div class="panel">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h2 class="mb-0">Presupuesto</h2>
+                @if (Model.Presupuesto != null)
+                {
+                    <span class="badge @Ui.ClasePresupuesto(Model.Presupuesto.Estado)">@Ui.TextoPresupuesto(Model.Presupuesto.Estado)</span>
+                }
+            </div>
+            @if (Model.Presupuesto is null)
+            {
+                <p class="text-muted">Aún no hay presupuesto.</p>
+            }
+            else
+            {
+                var p = Model.Presupuesto;
+                <table class="table table-sm">
+                    <thead><tr><th>Repuesto</th><th class="text-end">Cant.</th><th class="text-end">P. unitario</th><th class="text-end">Subtotal</th></tr></thead>
+                    <tbody>
+                    @foreach (var d in p.Detalles)
+                    {
+                        <tr><td>@d.RepuestoCodigo · @d.RepuestoNombre</td><td class="text-end">@d.Cantidad</td><td class="text-end">@Ui.Dinero(d.PrecioUnitario)</td><td class="text-end">@Ui.Dinero(d.Subtotal)</td></tr>
+                    }
+                    <tr><td colspan="3">Mano de obra</td><td class="text-end">@Ui.Dinero(p.ManoObra)</td></tr>
+                    <tr class="fw-bold"><td colspan="3">Total</td><td class="text-end">@Ui.Dinero(p.Total)</td></tr>
+                    </tbody>
+                </table>
+                if (p.ResueltoPor != null)
+                {
+                    <p class="small text-muted mb-2">@Ui.TextoPresupuesto(p.Estado) por @p.ResueltoPor el @Ui.Fecha(p.FechaResolucion). @p.ComentarioResolucion</p>
+                }
+                <a asp-controller="Presupuestos" asp-action="Detalle" asp-route-id="@p.Id" class="btn btn-sm btn-outline-primary">Ver presupuesto</a>
+            }
+            @if (esEmpleado && (Model.Estado == EstadoOrden.EnDiagnostico || Model.Estado == EstadoOrden.Presupuestado))
+            {
+                <a asp-controller="Presupuestos" asp-action="Crear" asp-route-ordenId="@Model.Id" class="btn btn-sm btn-ambar">
+                    <i class="bi bi-calculator"></i> @(Model.Presupuesto is null ? "Crear presupuesto" : "Modificar presupuesto")
+                </a>
+            }
+        </div>
+
+        <div class="panel">
+            <h2>Fotografías y evidencias (@Model.Evidencias.Count)</h2>
+            <div class="galeria mb-3">
+                @foreach (var e in Model.Evidencias)
+                {
+                    <figure>
+                        <a href="@Ui.Img(e.Ruta)" target="_blank" rel="noopener"><img src="@Ui.Img(e.Ruta)" alt="@e.Descripcion" /></a>
+                        <figcaption><strong>@e.Tipo.Texto()</strong><br />@e.Descripcion<br /><span class="text-muted">@Ui.Fecha(e.Fecha) · @e.SubidoPor</span></figcaption>
+                    </figure>
+                }
+            </div>
+            @if (esEmpleado && Model.Estado != EstadoOrden.Cancelado)
+            {
+                <form asp-action="SubirEvidencia" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data" class="row g-2">
+                    <div class="col-md-4">
+                        <select name="tipo" class="form-select">
+                            @foreach (var t in Enum.GetValues<TipoEvidencia>())
+                            {
+                                <option value="@t">@t.Texto()</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-8"><input name="descripcion" class="form-control" placeholder="Descripción (ej.: golpe en puerta trasera)" /></div>
+                    <div class="col-md-8"><input type="file" name="archivo" class="form-control" accept=".jpg,.jpeg,.png" /><div class="aviso-archivo text-warning small"></div></div>
+                    <div class="col-md-4"><button class="btn btn-outline-primary w-100"><i class="bi bi-upload"></i> Subir foto</button></div>
+                </form>
+            }
+        </div>
+    </div>
+
+    <div class="col-xl-5">
+        @if (esEmpleado && activa)
+        {
+            <div class="panel">
+                <h2>Siguiente paso</h2>
+                @switch (Model.Estado)
+                {
+                    case EstadoOrden.Recibido:
+                        <form asp-action="CambiarEstado" asp-route-id="@Model.Id" method="post">
+                            <input type="hidden" name="nuevoEstado" value="@EstadoOrden.EnDiagnostico" />
+                            <input type="hidden" name="version" value="@Model.Version" />
+                            <button class="btn btn-primary w-100"><i class="bi bi-search"></i> Iniciar diagnóstico</button>
+                        </form>
+                        break;
+                    case EstadoOrden.EnDiagnostico:
+                        <p class="mb-0">Registre el diagnóstico y luego cree el presupuesto.</p>
+                        break;
+                    case EstadoOrden.Presupuestado:
+                        <form asp-action="CambiarEstado" asp-route-id="@Model.Id" method="post">
+                            <input type="hidden" name="nuevoEstado" value="@EstadoOrden.PendienteAprobacion" />
+                            <input type="hidden" name="version" value="@Model.Version" />
+                            <button class="btn btn-primary w-100"><i class="bi bi-send"></i> Enviar presupuesto a aprobación</button>
+                        </form>
+                        break;
+                    case EstadoOrden.PendienteAprobacion:
+                        <p>Esperando aprobación del supervisor.</p>
+                        if (esJefe && Model.Presupuesto != null)
+                        {
+                            <a asp-controller="Presupuestos" asp-action="Detalle" asp-route-id="@Model.Presupuesto.Id" class="btn btn-primary w-100"><i class="bi bi-check2-square"></i> Revisar y aprobar</a>
+                        }
+                        break;
+                    case EstadoOrden.Aprobado:
+                        <form asp-action="CambiarEstado" asp-route-id="@Model.Id" method="post" data-confirmar="Se descontarán del inventario los repuestos del presupuesto. ¿Continuar?">
+                            <input type="hidden" name="nuevoEstado" value="@EstadoOrden.EnReparacion" />
+                            <input type="hidden" name="version" value="@Model.Version" />
+                            <button class="btn btn-primary w-100"><i class="bi bi-tools"></i> Iniciar reparación (descuenta repuestos)</button>
+                        </form>
+                        if (Model.MecanicoId is null) { <p class="small text-danger mt-2 mb-0">Primero asigne un mecánico.</p> }
+                        break;
+                    case EstadoOrden.EnReparacion:
+                        if (esJefe)
+                        {
+                            <form asp-action="Finalizar" asp-route-id="@Model.Id" method="post">
+                                <input name="comentario" class="form-control mb-2" placeholder="Comentario (opcional)" />
+                                <button class="btn btn-primary w-100"><i class="bi bi-flag"></i> Finalizar reparación</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <p class="mb-0">En reparación. El supervisor la finalizará al terminar.</p>
+                        }
+                        break;
+                    case EstadoOrden.Finalizado:
+                        if (puedeEntregar)
+                        {
+                            <form asp-action="CambiarEstado" asp-route-id="@Model.Id" method="post">
+                                <input type="hidden" name="nuevoEstado" value="@EstadoOrden.Entregado" />
+                                <input type="hidden" name="version" value="@Model.Version" />
+                                <input name="comentario" class="form-control mb-2" placeholder="Recibido por (opcional)" />
+                                <button class="btn btn-primary w-100"><i class="bi bi-key"></i> Registrar entrega al cliente</button>
+                            </form>
+                        }
+                        break;
+                }
+
+                @if (esJefe && Model.Estado != EstadoOrden.Finalizado)
+                {
+                    <hr />
+                    <form asp-action="Cancelar" asp-route-id="@Model.Id" method="post" class="d-flex gap-2" data-confirmar="¿Cancelar la orden? Los repuestos descontados regresarán al inventario.">
+                        <input name="comentario" class="form-control form-control-sm" placeholder="Motivo de cancelación" required />
+                        <button class="btn btn-sm btn-outline-danger text-nowrap">Cancelar orden</button>
+                    </form>
+                }
+            </div>
+
+            if (esJefe && mecanicos != null && Model.Estado != EstadoOrden.Finalizado)
+            {
+                <div class="panel">
+                    <h2>Asignar mecánico</h2>
+                    <form asp-action="Asignar" asp-route-id="@Model.Id" method="post" class="row g-2">
+                        <div class="col-12">
+                            <select name="MecanicoId" id="selMecanico" class="form-select" required>
+                                <option value="">— Mecánico —</option>
+                                @foreach (var m in mecanicos)
+                                {
+                                    <option value="@m.Id" data-version="@m.Version" selected="@(m.Id == Model.MecanicoId)">@m.Nombre (@m.OrdenesActivas activas)</option>
+                                }
+                            </select>
+                            <!-- Versión del mecánico que se vio en pantalla: si otro supervisor lo asigna antes, la API responde 409 -->
+                            <input type="hidden" name="MecanicoVersion" id="mecanicoVersion" />
+                        </div>
+                        <div class="col-6"><label class="form-label small mb-0">Inicio</label><input type="datetime-local" name="Inicio" value="@Ui.ParaInput(inicioSugerido)" class="form-control" required /></div>
+                        <div class="col-6"><label class="form-label small mb-0">Fin</label><input type="datetime-local" name="Fin" value="@Ui.ParaInput(inicioSugerido.AddHours(3))" class="form-control" required /></div>
+                        <div class="col-12"><button class="btn btn-outline-primary w-100"><i class="bi bi-person-check"></i> Asignar</button></div>
+                    </form>
+                </div>
+            }
+        }
+
+        <div class="panel">
+            <h2>Seguimiento</h2>
+            <ul class="historial">
+                @foreach (var h in Model.Historial.OrderByDescending(x => x.Fecha))
+                {
+                    <li>
+                        <span class="estado @Ui.ClaseEstado(h.EstadoNuevo)">@h.EstadoNuevo.Texto()</span>
+                        @if (h.Comentario != null) { <span>@h.Comentario</span> }
+                        <div class="meta">@Ui.Fecha(h.Fecha) · @h.Usuario</div>
+                    </li>
+                }
+            </ul>
+        </div>
+
+        @if (Model.Asignaciones.Any())
+        {
+            <div class="panel">
+                <h2>Asignaciones</h2>
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Mecánico</th><th>Horario</th><th></th></tr></thead>
+                    <tbody>
+                    @foreach (var a in Model.Asignaciones)
+                    {
+                        <tr class="@(a.Activa ? "" : "text-muted")">
+                            <td>@a.MecanicoNombre</td>
+                            <td>@Ui.Fecha(a.Inicio) – @a.Fin.ToString("HH:mm")</td>
+                            <td>@(a.Activa ? "Vigente" : "Liberada")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    (function () {
+        const sel = document.getElementById('selMecanico');
+        const hidden = document.getElementById('mecanicoVersion');
+        if (!sel || !hidden) return;
+        const actualizar = () => { const o = sel.options[sel.selectedIndex]; hidden.value = o ? (o.dataset.version || '') : ''; };
+        sel.addEventListener('change', actualizar);
+        actualizar();
+    })();
+</script>
+}

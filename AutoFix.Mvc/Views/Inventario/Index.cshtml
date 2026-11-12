@@ -1,0 +1,53 @@
+@model List<RepuestoDto>
+@{
+    ViewData["Title"] = "Inventario";
+    var alertas = (List<RepuestoDto>)ViewBag.Alertas;
+    var gestiona = User.TienePermiso(Permisos.InventarioGestionar);
+}
+<div class="encabezado">
+    <div><h1>Inventario de repuestos</h1><p class="sub">@Model.Count repuestos · @(Model.Sum(r => r.Existencias)) unidades</p></div>
+    @if (gestiona)
+    {
+        <a asp-action="Crear" class="btn btn-ambar"><i class="bi bi-plus-lg"></i> Nuevo repuesto</a>
+    }
+</div>
+@if (alertas.Any())
+{
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i> <strong>@alertas.Count repuesto(s) en stock mínimo:</strong>
+        @(string.Join(", ", alertas.Select(a => $"{a.Nombre} ({a.Existencias}/{a.StockMinimo})")))
+    </div>
+}
+<div class="panel">
+    <form method="get" class="row g-2 mb-3 align-items-center">
+        <div class="col-md-5"><input name="buscar" value="@ViewBag.Buscar" class="form-control" placeholder="Código, nombre o marca" /></div>
+        <div class="col-auto form-check ms-2">
+            <input class="form-check-input" type="checkbox" name="soloBajoStock" value="true" id="bajo" checked="@((bool)ViewBag.SoloBajoStock)" />
+            <label class="form-check-label" for="bajo">Solo stock bajo</label>
+        </div>
+        <div class="col-auto"><button class="btn btn-outline-primary"><i class="bi bi-search"></i> Buscar</button></div>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th></th><th>Código</th><th>Nombre</th><th>Categoría</th><th>Marca</th><th class="text-end">Precio</th><th class="text-end">Existencias</th><th class="text-end">Mínimo</th></tr></thead>
+            <tbody>
+            @foreach (var r in Model)
+            {
+                <tr>
+                    <td style="width:60px">
+                        @if (!string.IsNullOrEmpty(r.FotoRuta)) { <img src="@Ui.Img(r.FotoRuta)" alt="" style="width:48px;height:36px;object-fit:cover;border-radius:4px" /> }
+                        else { <i class="bi bi-box text-muted fs-4"></i> }
+                    </td>
+                    <td class="mono">@r.Codigo</td>
+                    <td><a asp-action="Detalle" asp-route-id="@r.Id" class="fw-semibold">@r.Nombre</a></td>
+                    <td>@r.Categoria</td>
+                    <td>@r.Marca</td>
+                    <td class="text-end">@Ui.Dinero(r.Precio)</td>
+                    <td class="text-end @(r.BajoStock ? "stock-bajo" : "")">@r.Existencias</td>
+                    <td class="text-end">@r.StockMinimo</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,47 @@
+@model List<MovimientoDto>
+@{
+    ViewData["Title"] = "Movimientos de inventario";
+    TipoMovimiento? tipo = ViewBag.Tipo;
+}
+<div class="encabezado">
+    <div><h1>Movimientos de inventario</h1><p class="sub">Entradas y salidas: @(Model.Count(m => m.Tipo == TipoMovimiento.Entrada)) entradas · @(Model.Count(m => m.Tipo == TipoMovimiento.Salida)) salidas</p></div>
+</div>
+<div class="panel">
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-md-4">
+            <select name="repuestoId" asp-items="ViewBag.Repuestos" class="form-select"><option value="">Todos los repuestos</option></select>
+        </div>
+        <div class="col-md-2">
+            <select name="tipo" class="form-select">
+                <option value="">Entradas y salidas</option>
+                <option value="Entrada" selected="@(tipo == TipoMovimiento.Entrada)">Entradas</option>
+                <option value="Salida" selected="@(tipo == TipoMovimiento.Salida)">Salidas</option>
+            </select>
+        </div>
+        <div class="col-md-2"><input type="date" name="desde" value="@ViewBag.Desde" class="form-control" title="Desde" /></div>
+        <div class="col-md-2"><input type="date" name="hasta" value="@ViewBag.Hasta" class="form-control" title="Hasta" /></div>
+        <div class="col-md-2"><button class="btn btn-outline-primary w-100"><i class="bi bi-funnel"></i> Filtrar</button></div>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-hover table-sm">
+            <thead><tr><th>Fecha</th><th>Repuesto</th><th>Tipo</th><th class="text-end">Cantidad</th><th class="text-end">Antes</th><th class="text-end">Después</th><th>Motivo</th><th>Orden</th><th>Usuario</th></tr></thead>
+            <tbody>
+            @foreach (var m in Model)
+            {
+                <tr>
+                    <td>@Ui.Fecha(m.Fecha)</td>
+                    <td><a asp-controller="Inventario" asp-action="Detalle" asp-route-id="@m.RepuestoId">@m.RepuestoCodigo · @m.RepuestoNombre</a></td>
+                    <td><span class="badge @(m.Tipo == TipoMovimiento.Entrada ? "text-bg-success" : "text-bg-secondary")">@m.Tipo</span></td>
+                    <td class="text-end">@m.Cantidad</td>
+                    <td class="text-end">@m.ExistenciaAnterior</td>
+                    <td class="text-end">@m.ExistenciaResultante</td>
+                    <td>@m.Motivo</td>
+                    <td>@if (m.OrdenId.HasValue) { <a asp-controller="Ordenes" asp-action="Detalle" asp-route-id="@m.OrdenId">@m.NumeroOrden</a> }</td>
+                    <td>@m.Usuario</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        @if (!Model.Any()) { <p class="text-muted mb-0">Sin movimientos.</p> }
+    </div>
+</div>

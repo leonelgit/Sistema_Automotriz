@@ -1,0 +1,7 @@
+@{ ViewData["Title"] = "API no disponible"; }
+<div class="panel">
+    <h1 class="h3"><i class="bi bi-plug"></i> No se pudo conectar con AutoFix.Api</h1>
+    <p>El frontend MVC no accede a la base de datos: todo lo pide a la API. Verifique que la API esté ejecutándose en
+        <span class="mono">@Ui.ApiBase</span> (en VS Code: configuración «API + MVC» o <span class="mono">dotnet run</span> dentro de AutoFix.Api).</p>
+    <p class="text-muted small mb-0">Detalle técnico: @ViewData["Detalle"]</p>
+</div>

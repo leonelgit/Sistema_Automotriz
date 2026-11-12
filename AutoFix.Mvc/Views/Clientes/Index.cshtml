@@ -1,0 +1,42 @@
+@model List<ClienteDto>
+@{ ViewData["Title"] = "Clientes"; }
+<div class="encabezado">
+    <div><h1>Clientes</h1><p class="sub">@Model.Count registrados</p></div>
+    @if (User.EsAlguno(Roles.Administrador, Roles.Recepcionista))
+    {
+        <a asp-action="Crear" class="btn btn-ambar"><i class="bi bi-person-plus"></i> Nuevo cliente</a>
+    }
+</div>
+<div class="panel">
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-md-6"><input name="buscar" value="@ViewBag.Buscar" class="form-control" placeholder="Buscar por nombre, DUI o correo" /></div>
+        <div class="col-auto"><button class="btn btn-outline-primary"><i class="bi bi-search"></i> Buscar</button></div>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Nombre</th><th>DUI</th><th>Teléfono</th><th>Correo</th><th>Vehículos</th><th>Cuenta</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var c in Model)
+            {
+                <tr>
+                    <td><a asp-action="Detalle" asp-route-id="@c.Id" class="fw-semibold">@c.NombreCompleto</a></td>
+                    <td class="mono">@c.Dui</td>
+                    <td>@c.Telefono</td>
+                    <td>@c.Correo</td>
+                    <td>@c.CantidadVehiculos</td>
+                    <td>@(c.TieneUsuario ? "Sí" : "—")</td>
+                    <td class="text-end text-nowrap">
+                        @if (User.EsAlguno(Roles.Administrador, Roles.Recepcionista))
+                        {
+                            <a asp-action="Editar" asp-route-id="@c.Id" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+                            <form asp-action="Eliminar" asp-route-id="@c.Id" method="post" class="d-inline" data-confirmar="¿Eliminar este cliente y sus vehículos?">
+                                <button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

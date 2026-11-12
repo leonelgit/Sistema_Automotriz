@@ -1,0 +1,89 @@
+@model PresupuestoDto
+@{
+    ViewData["Title"] = "Presupuesto " + Model.NumeroOrden;
+    var pendiente = Model.Estado == EstadoPresupuesto.Pendiente && Model.EstadoOrden == EstadoOrden.PendienteAprobacion;
+}
+<div class="encabezado">
+    <div>
+        <h1>Presupuesto @Model.NumeroOrden <span class="badge @Ui.ClasePresupuesto(Model.Estado) fs-6 align-middle">@Ui.TextoPresupuesto(Model.Estado)</span></h1>
+        <p class="sub">@Model.VehiculoDescripcion · @Model.ClienteNombre · Orden en «@Model.EstadoOrden.Texto()»</p>
+    </div>
+    <a asp-controller="Ordenes" asp-action="Detalle" asp-route-id="@Model.OrdenId" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Ir a la orden</a>
+</div>
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="panel">
+            <table class="table">
+                <thead><tr><th>Código</th><th>Repuesto</th><th class="text-end">Cantidad</th><th class="text-end">Precio unitario</th><th class="text-end">Subtotal</th></tr></thead>
+                <tbody>
+                @foreach (var d in Model.Detalles)
+                {
+                    <tr>
+                        <td class="mono">@d.RepuestoCodigo</td>
+                        <td>@d.RepuestoNombre
+                            @if (User.EsEmpleado() && !Model.InventarioDescontado && d.ExistenciasActuales < d.Cantidad)
+                            {
+                                <span class="badge text-bg-warning">solo hay @d.ExistenciasActuales</span>
+                            }
+                        </td>
+                        <td class="text-end">@d.Cantidad</td>
+                        <td class="text-end">@Ui.Dinero(d.PrecioUnitario)</td>
+                        <td class="text-end">@Ui.Dinero(d.Subtotal)</td>
+                    </tr>
+                }
+                @if (!Model.Detalles.Any()) { <tr><td colspan="5" class="text-muted">Sin repuestos (solo mano de obra).</td></tr> }
+                </tbody>
+                <tfoot>
+                    <tr><td colspan="4">Repuestos</td><td class="text-end">@Ui.Dinero(Model.TotalRepuestos)</td></tr>
+                    <tr><td colspan="4">Mano de obra</td><td class="text-end">@Ui.Dinero(Model.ManoObra)</td></tr>
+                    <tr class="fs-5 fw-bold"><td colspan="4">Total</td><td class="text-end">@Ui.Dinero(Model.Total)</td></tr>
+                </tfoot>
+            </table>
+            @if (!string.IsNullOrWhiteSpace(Model.Observaciones)) { <p><strong>Observaciones:</strong> @Model.Observaciones</p> }
+            <p class="small text-muted mb-0">
+                Elaborado por @Model.CreadoPor el @Ui.Fecha(Model.FechaCreacion).
+                @if (Model.InventarioDescontado) { <span>Repuestos ya descontados del inventario.</span> }
+            </p>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="panel">
+            <h2>Aprobación</h2>
+            @if (Model.ResueltoPor != null)
+            {
+                <p><strong>@Ui.TextoPresupuesto(Model.Estado)</strong> por @Model.ResueltoPor<br /><span class="text-muted">@Ui.Fecha(Model.FechaResolucion)</span></p>
+                if (!string.IsNullOrEmpty(Model.ComentarioResolucion)) { <p class="mb-0">«@Model.ComentarioResolucion»</p> }
+            }
+            else if (pendiente)
+            {
+                <p>El presupuesto espera la decisión del supervisor.</p>
+            }
+            else
+            {
+                <p class="mb-0">Aún no se ha enviado a aprobación.</p>
+            }
+
+            @if (User.EsEmpleado() && Model.Estado != EstadoPresupuesto.Aprobado && Model.EstadoOrden == EstadoOrden.Presupuestado)
+            {
+                <form asp-action="Enviar" asp-route-id="@Model.Id" method="post" class="mt-3">
+                    <button class="btn btn-primary w-100"><i class="bi bi-send"></i> Enviar a aprobación</button>
+                </form>
+                <a asp-action="Crear" asp-route-ordenId="@Model.OrdenId" class="btn btn-outline-secondary w-100 mt-2">Modificar presupuesto</a>
+            }
+
+            @* Se muestran a Supervisor/Administrador. Si el usuario no tiene el claim Ordenes.Aprobar, la API responde 403. *@
+            @if (pendiente && User.EsAlguno(Roles.Supervisor, Roles.Administrador))
+            {
+                <hr />
+                <form asp-action="Aprobar" asp-route-id="@Model.Id" method="post" class="mb-2">
+                    <input name="comentario" class="form-control mb-2" placeholder="Comentario (opcional)" />
+                    <button class="btn btn-success w-100"><i class="bi bi-check2-circle"></i> Aprobar presupuesto</button>
+                </form>
+                <form asp-action="Rechazar" asp-route-id="@Model.Id" method="post">
+                    <input name="comentario" class="form-control mb-2" placeholder="Motivo del rechazo" required />
+                    <button class="btn btn-outline-danger w-100">Rechazar</button>
+                </form>
+            }
+        </div>
+    </div>
+</div>

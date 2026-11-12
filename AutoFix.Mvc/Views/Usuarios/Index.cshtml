@@ -1,0 +1,71 @@
+@model List<UsuarioDto>
+@{
+    ViewData["Title"] = "Usuarios";
+    var mecanicos = (List<MecanicoDto>)ViewBag.Mecanicos;
+}
+<div class="encabezado">
+    <div><h1>Usuarios, roles y permisos</h1><p class="sub">El rol es el puesto; los permisos (claims) son las acciones concretas. Los cambios aplican en el siguiente inicio de sesión.</p></div>
+</div>
+<div class="row g-3">
+    <div class="col-xl-8">
+        <div class="panel">
+            <div class="table-responsive">
+                <table class="table align-top">
+                    <thead><tr><th>Usuario</th><th>Rol</th><th>Permisos (claims)</th><th></th></tr></thead>
+                    <tbody>
+                    @foreach (var u in Model)
+                    {
+                        <tr class="@(u.Activo ? "" : "text-muted")">
+                            <td><strong>@u.NombreCompleto</strong><br /><span class="small">@u.Email</span></td>
+                            <td>@u.Rol</td>
+                            <td>
+                                <form asp-action="Permisos" asp-route-id="@u.Id" method="post">
+                                    <div class="d-flex flex-wrap gap-2 mb-1">
+                                        @foreach (var p in Permisos.Todos)
+                                        {
+                                            <label class="small text-nowrap"><input type="checkbox" name="permisos" value="@p" checked="@u.Permisos.Contains(p)" /> @p</label>
+                                        }
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-primary">Guardar permisos</button>
+                                </form>
+                            </td>
+                            <td class="text-end">
+                                <form asp-action="Activo" asp-route-id="@u.Id" method="post">
+                                    <input type="hidden" name="activo" value="@((!u.Activo).ToString().ToLower())" />
+                                    <button class="btn btn-sm @(u.Activo ? "btn-outline-danger" : "btn-outline-success")">@(u.Activo ? "Desactivar" : "Activar")</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="panel">
+            <h2>Nuevo usuario</h2>
+            <form asp-action="Crear" method="post">
+                <input name="NombreCompleto" class="form-control mb-2" placeholder="Nombre completo" required />
+                <input name="Email" type="email" class="form-control mb-2" placeholder="Correo" required />
+                <input name="Password" type="password" minlength="8" class="form-control mb-2" placeholder="Contraseña (mín. 8)" required />
+                <select name="Rol" class="form-select mb-2">
+                    @foreach (var r in Roles.Todos.Where(r => r != Roles.Cliente))
+                    {
+                        <option value="@r">@r</option>
+                    }
+                </select>
+                <label class="form-label small mb-0">Si es mecánico, vincular a:</label>
+                <select name="MecanicoId" class="form-select mb-2">
+                    <option value="">Crear un mecánico nuevo con este nombre</option>
+                    @foreach (var m in mecanicos)
+                    {
+                        <option value="@m.Id">@m.Nombre</option>
+                    }
+                </select>
+                <p class="small text-muted">Recibirá los permisos por defecto de su rol; luego puede ajustarlos en la tabla.</p>
+                <button class="btn btn-primary w-100">Crear usuario</button>
+            </form>
+        </div>
+    </div>
+</div>

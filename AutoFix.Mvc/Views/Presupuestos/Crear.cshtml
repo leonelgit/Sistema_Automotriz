@@ -1,0 +1,111 @@
+@model CrearPresupuestoRequest
+@{
+    var orden = (OrdenDetalleDto)ViewBag.Orden;
+    var repuestos = (List<RepuestoDto>)ViewBag.Repuestos;
+    ViewData["Title"] = "Presupuesto " + orden.NumeroOrden;
+    var lineas = Model.Repuestos.Any() ? Model.Repuestos : new List<LineaPresupuestoRequest> { new() { RepuestoId = 0 } };
+}
+<div class="encabezado">
+    <div><h1>Presupuesto de @orden.NumeroOrden</h1><p class="sub">@orden.VehiculoDescripcion · @orden.TipoServicio</p></div>
+</div>
+<form asp-action="Crear" asp-route-ordenId="@orden.Id" method="post">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+    <div class="panel">
+        <h2>Repuestos utilizados</h2>
+        <div class="table-responsive">
+            <table class="table" id="tablaLineas">
+                <thead><tr><th style="min-width:280px">Repuesto</th><th style="width:110px">Cantidad</th><th style="width:150px">Precio unitario</th><th class="text-end" style="width:130px">Subtotal</th><th></th></tr></thead>
+                <tbody>
+                @for (var i = 0; i < lineas.Count; i++)
+                {
+                    <tr class="linea">
+                        <td>
+                            <select name="Repuestos[@i].RepuestoId" class="form-select sel-repuesto">
+                                <option value="0" data-precio="0">— Seleccione —</option>
+                                @foreach (var r in repuestos)
+                                {
+                                    <option value="@r.Id" data-precio="@(r.Precio.ToString(System.Globalization.CultureInfo.InvariantCulture))" selected="@(r.Id == lineas[i].RepuestoId)">
+                                        @r.Codigo · @r.Nombre (disp. @r.Existencias)
+                                    </option>
+                                }
+                            </select>
+                        </td>
+                        <td><input name="Repuestos[@i].Cantidad" type="number" min="1" value="@lineas[i].Cantidad" class="form-control inp-cantidad" /></td>
+                        <td><input name="Repuestos[@i].PrecioUnitario" type="number" step="0.01" min="0" value="@(lineas[i].PrecioUnitario?.ToString(System.Globalization.CultureInfo.InvariantCulture))" class="form-control inp-precio" placeholder="Precio del catálogo" /></td>
+                        <td class="text-end subtotal">$0.00</td>
+                        <td><button type="button" class="btn btn-sm btn-outline-danger quitar" title="Quitar"><i class="bi bi-x"></i></button></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        <button type="button" id="agregar" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus"></i> Agregar repuesto</button>
+        <p class="small text-muted mt-2 mb-0">Las existencias se validan y descuentan al <strong>iniciar la reparación</strong>, no al presupuestar.</p>
+    </div>
+    <div class="panel">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="ManoObra" class="form-label">Mano de obra ($)</label>
+                <input asp-for="ManoObra" type="number" step="0.01" min="0" value="@(Model.ManoObra.ToString(System.Globalization.CultureInfo.InvariantCulture))" class="form-control" id="manoObra" />
+            </div>
+            <div class="col-md-8">
+                <label asp-for="Observaciones" class="form-label">Observaciones</label>
+                <input asp-for="Observaciones" class="form-control" />
+            </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div class="fs-4">Total: <strong id="total">$0.00</strong></div>
+            <div class="d-flex gap-2">
+                <a asp-controller="Ordenes" asp-action="Detalle" asp-route-id="@orden.Id" class="btn btn-outline-secondary">Cancelar</a>
+                <button class="btn btn-primary">Guardar presupuesto</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+(function () {
+    const tbody = document.querySelector('#tablaLineas tbody');
+    const fmt = n => '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    function renumerar() {
+        tbody.querySelectorAll('tr.linea').forEach((tr, i) => {
+            tr.querySelectorAll('[name]').forEach(el => el.name = el.name.replace(/Repuestos\[\d+\]/, 'Repuestos[' + i + ']'));
+        });
+    }
+    function recalcular() {
+        let total = parseFloat(document.getElementById('manoObra').value || '0') || 0;
+        tbody.querySelectorAll('tr.linea').forEach(tr => {
+            const sel = tr.querySelector('.sel-repuesto');
+            const precioCat = parseFloat(sel.options[sel.selectedIndex].dataset.precio || '0');
+            const precioInp = tr.querySelector('.inp-precio').value;
+            const precio = precioInp === '' ? precioCat : parseFloat(precioInp);
+            const cant = parseInt(tr.querySelector('.inp-cantidad').value || '0', 10);
+            const sub = sel.value === '0' ? 0 : precio * cant;
+            tr.querySelector('.subtotal').textContent = fmt(sub);
+            total += sub;
+        });
+        document.getElementById('total').textContent = fmt(total);
+    }
+    document.getElementById('agregar').addEventListener('click', () => {
+        const nueva = tbody.querySelector('tr.linea').cloneNode(true);
+        nueva.querySelector('.sel-repuesto').selectedIndex = 0;
+        nueva.querySelector('.inp-cantidad').value = 1;
+        nueva.querySelector('.inp-precio').value = '';
+        tbody.appendChild(nueva);
+        renumerar(); recalcular();
+    });
+    tbody.addEventListener('click', e => {
+        const btn = e.target.closest('.quitar');
+        if (!btn) return;
+        if (tbody.querySelectorAll('tr.linea').length > 1) btn.closest('tr').remove();
+        else { const tr = btn.closest('tr'); tr.querySelector('.sel-repuesto').selectedIndex = 0; }
+        renumerar(); recalcular();
+    });
+    document.addEventListener('input', recalcular);
+    document.addEventListener('change', recalcular);
+    recalcular();
+})();
+</script>
+}

@@ -1,0 +1,38 @@
+@model List<MecanicoDto>
+@{ ViewData["Title"] = "Mecánicos"; }
+<div class="encabezado">
+    <div><h1>Mecánicos</h1><p class="sub">Administración y carga de trabajo. Las asignaciones se hacen desde el detalle de cada orden.</p></div>
+    @if (User.IsInRole(Roles.Administrador))
+    {
+        <a asp-action="Crear" class="btn btn-ambar"><i class="bi bi-person-plus"></i> Nuevo mecánico</a>
+    }
+</div>
+<div class="panel">
+    <table class="table table-hover">
+        <thead><tr><th>Nombre</th><th>Especialidad</th><th>Teléfono</th><th>Usuario</th><th class="text-center">Órdenes activas</th><th>Última asignación</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var m in Model)
+        {
+            <tr class="@(m.Activo ? "" : "text-muted")">
+                <td class="fw-semibold">@m.Nombre</td>
+                <td>@(m.Especialidad ?? "—")</td>
+                <td>@(m.Telefono ?? "—")</td>
+                <td>@(m.UsuarioEmail ?? "—")</td>
+                <td class="text-center">@m.OrdenesActivas</td>
+                <td>@Ui.Fecha(m.UltimaAsignacion)</td>
+                <td>@(m.Activo ? "Activo" : "Inactivo")</td>
+                <td class="text-end text-nowrap">
+                    <a asp-action="Agenda" asp-route-id="@m.Id" class="btn btn-sm btn-outline-primary"><i class="bi bi-calendar3"></i> Agenda</a>
+                    @if (User.IsInRole(Roles.Administrador))
+                    {
+                        <a asp-action="Editar" asp-route-id="@m.Id" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        <form asp-action="Eliminar" asp-route-id="@m.Id" method="post" class="d-inline" data-confirmar="¿Eliminar a @m.Nombre?">
+                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

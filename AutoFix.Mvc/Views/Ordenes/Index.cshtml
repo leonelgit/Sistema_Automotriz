@@ -1,0 +1,52 @@
+@model List<OrdenDto>
+@{
+    ViewData["Title"] = User.IsInRole(Roles.Cliente) ? "Mis reparaciones" : User.IsInRole(Roles.Mecanico) ? "Mis órdenes asignadas" : "Órdenes de reparación";
+    EstadoOrden? estado = ViewBag.Estado;
+}
+<div class="encabezado">
+    <div><h1>@ViewData["Title"]</h1><p class="sub">@Model.Count órdenes</p></div>
+    @if (User.EsAlguno(Roles.Administrador, Roles.Recepcionista))
+    {
+        <a asp-action="Crear" class="btn btn-ambar"><i class="bi bi-clipboard-plus"></i> Nueva orden</a>
+    }
+</div>
+<div class="panel">
+    <form method="get" class="row g-2 mb-3 align-items-center">
+        <div class="col-md-4"><input name="buscar" value="@ViewBag.Buscar" class="form-control" placeholder="N.º de orden, placa, cliente o servicio" /></div>
+        <div class="col-md-3">
+            <select name="estado" class="form-select">
+                <option value="">Todos los estados</option>
+                @foreach (var e in Enum.GetValues<EstadoOrden>())
+                {
+                    <option value="@e" selected="@(estado == e)">@e.Texto()</option>
+                }
+            </select>
+        </div>
+        <div class="col-auto form-check ms-2">
+            <input class="form-check-input" type="checkbox" name="soloActivas" value="true" id="soloActivas" checked="@((bool)ViewBag.SoloActivas)" />
+            <label class="form-check-label" for="soloActivas">Solo activas</label>
+        </div>
+        <div class="col-auto"><button class="btn btn-outline-primary"><i class="bi bi-funnel"></i> Filtrar</button></div>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Orden</th><th>Ingreso</th><th>Vehículo</th><th>Cliente</th><th>Servicio</th><th>Mecánico</th><th>Estado</th><th class="text-end">Presupuesto</th></tr></thead>
+            <tbody>
+            @foreach (var o in Model)
+            {
+                <tr>
+                    <td><a asp-action="Detalle" asp-route-id="@o.Id" class="fw-semibold">@o.NumeroOrden</a></td>
+                    <td>@Ui.FechaCorta(o.FechaIngreso)</td>
+                    <td>@o.VehiculoDescripcion</td>
+                    <td>@o.ClienteNombre</td>
+                    <td>@o.TipoServicio</td>
+                    <td>@(o.MecanicoNombre ?? "—")</td>
+                    <td><span class="estado @Ui.ClaseEstado(o.Estado)">@o.Estado.Texto()</span></td>
+                    <td class="text-end">@(o.TotalPresupuesto.HasValue ? Ui.Dinero(o.TotalPresupuesto) : "—")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        @if (!Model.Any()) { <p class="text-muted">No hay órdenes con esos filtros.</p> }
+    </div>
+</div>

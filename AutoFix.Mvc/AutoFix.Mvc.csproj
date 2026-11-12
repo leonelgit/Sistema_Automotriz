@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    Frontend MVC. REGLA DE ORO: este proyecto NO referencia EF Core ni la base de datos.
+    Toda la información se obtiene de AutoFix.Api por HTTP (HttpClient).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Solo DTOs (clases simples). No contiene acceso a datos. -->
+    <ProjectReference Include="..\AutoFix.Contracts\AutoFix.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

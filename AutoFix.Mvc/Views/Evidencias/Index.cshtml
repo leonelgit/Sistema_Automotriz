@@ -1,0 +1,70 @@
+@model List<EvidenciaDto>
+@{
+    ViewData["Title"] = "Evidencias";
+    TipoEvidencia? tipo = ViewBag.Tipo;
+    int? ordenId = ViewBag.OrdenId;
+}
+<div class="encabezado">
+    <div><h1>Evidencias fotográficas</h1><p class="sub">Ingreso, daños, repuestos utilizados y reparación finalizada. En la base solo se guarda la ruta de cada imagen.</p></div>
+</div>
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="panel">
+            <h2><i class="bi bi-upload"></i> Subir fotografía</h2>
+            <form asp-action="Subir" method="post" enctype="multipart/form-data">
+                <label class="form-label">Orden</label>
+                <select name="ordenId" asp-items="ViewBag.Ordenes" class="form-select mb-2" required><option value="">— Seleccione —</option></select>
+                <label class="form-label">Tipo</label>
+                <select name="tipo" class="form-select mb-2">
+                    @foreach (var t in Enum.GetValues<TipoEvidencia>())
+                    {
+                        <option value="@t">@t.Texto()</option>
+                    }
+                </select>
+                <input name="descripcion" class="form-control mb-2" placeholder="Descripción" />
+                <input type="file" name="archivo" class="form-control" accept=".jpg,.jpeg,.png" />
+                <div class="aviso-archivo text-warning small mb-2"></div>
+                <p class="small text-muted">Formatos: JPG, JPEG, PNG · Máximo 5 MB · Se guarda con nombre único (Guid).</p>
+                <button class="btn btn-primary w-100">Subir</button>
+            </form>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="panel">
+            <form method="get" class="row g-2 mb-3">
+                <div class="col-md-5">
+                    <select name="tipo" class="form-select">
+                        <option value="">Todos los tipos</option>
+                        @foreach (var t in Enum.GetValues<TipoEvidencia>())
+                        {
+                            <option value="@t" selected="@(tipo == t)">@t.Texto()</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-5"><select name="ordenId" asp-items="ViewBag.Ordenes" class="form-select"><option value="">Todas las órdenes</option></select></div>
+                <div class="col-md-2"><button class="btn btn-outline-primary w-100">Filtrar</button></div>
+            </form>
+            <div class="galeria">
+                @foreach (var e in Model)
+                {
+                    <figure>
+                        <a href="@Ui.Img(e.Ruta)" target="_blank" rel="noopener"><img src="@Ui.Img(e.Ruta)" alt="@e.Descripcion" loading="lazy" /></a>
+                        <figcaption>
+                            <a asp-controller="Ordenes" asp-action="Detalle" asp-route-id="@e.OrdenId" class="fw-semibold">@e.NumeroOrden</a> · @e.Tipo.Texto()<br />
+                            @e.Descripcion
+                            <div class="text-muted">@Ui.Fecha(e.Fecha) · @e.SubidoPor</div>
+                            <div class="mono text-muted text-truncate" title="@e.Ruta">@e.Ruta</div>
+                            @if (User.EsAlguno(Roles.Administrador, Roles.Supervisor))
+                            {
+                                <form asp-action="Eliminar" asp-route-id="@e.Id" method="post" data-confirmar="¿Eliminar esta fotografía?">
+                                    <button class="btn btn-sm btn-link text-danger p-0">Eliminar</button>
+                                </form>
+                            }
+                        </figcaption>
+                    </figure>
+                }
+            </div>
+            @if (!Model.Any()) { <p class="text-muted mb-0">No hay fotografías.</p> }
+        </div>
+    </div>
+</div>

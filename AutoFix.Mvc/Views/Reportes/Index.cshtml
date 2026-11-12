@@ -1,0 +1,87 @@
+@model ReporteOrdenesDto
+@{
+    ViewData["Title"] = "Reportes";
+    var mecanicos = (List<ReporteMecanicoDto>)ViewBag.Mecanicos;
+    var inv = (ReporteInventarioDto)ViewBag.Inventario;
+    EstadoOrden? estado = ViewBag.Estado;
+}
+<div class="encabezado">
+    <div><h1>Reportes de operación</h1><p class="sub">Del @Ui.FechaCorta(Model.Desde) al @Ui.FechaCorta(Model.Hasta)</p></div>
+    <button type="button" class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
+</div>
+<div class="panel">
+    <form method="get" class="row g-2">
+        <div class="col-md-3"><label class="form-label small mb-0">Desde</label><input type="date" name="desde" value="@Model.Desde.ToString("yyyy-MM-dd")" class="form-control" /></div>
+        <div class="col-md-3"><label class="form-label small mb-0">Hasta</label><input type="date" name="hasta" value="@Model.Hasta.ToString("yyyy-MM-dd")" class="form-control" /></div>
+        <div class="col-md-3">
+            <label class="form-label small mb-0">Estado</label>
+            <select name="estado" class="form-select">
+                <option value="">Todos</option>
+                @foreach (var e in Enum.GetValues<EstadoOrden>())
+                {
+                    <option value="@e" selected="@(estado == e)">@e.Texto()</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3 d-flex align-items-end"><button class="btn btn-primary w-100">Consultar</button></div>
+    </form>
+</div>
+<div class="row g-3 my-1">
+    <div class="col-md-4"><div class="cifra"><div class="valor">@Model.Total</div><div class="etiqueta">Órdenes ingresadas</div></div></div>
+    <div class="col-md-4"><div class="cifra ambar"><div class="valor">@Ui.Dinero(Model.MontoPresupuestosAprobados)</div><div class="etiqueta">Presupuestos aprobados</div></div></div>
+    <div class="col-md-4"><div class="cifra"><div class="valor">@Ui.Dinero(inv.ValorInventario)</div><div class="etiqueta">Valor del inventario (@inv.UnidadesTotales u.)</div></div></div>
+</div>
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="panel">
+            <h2>Órdenes del período</h2>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead><tr><th>Orden</th><th>Ingreso</th><th>Vehículo</th><th>Servicio</th><th>Mecánico</th><th>Estado</th><th class="text-end">Total</th></tr></thead>
+                    <tbody>
+                    @foreach (var o in Model.Ordenes)
+                    {
+                        <tr>
+                            <td><a asp-controller="Ordenes" asp-action="Detalle" asp-route-id="@o.Id">@o.NumeroOrden</a></td>
+                            <td>@Ui.FechaCorta(o.FechaIngreso)</td><td>@o.VehiculoDescripcion</td><td>@o.TipoServicio</td>
+                            <td>@(o.MecanicoNombre ?? "—")</td>
+                            <td><span class="estado @Ui.ClaseEstado(o.Estado)">@o.Estado.Texto()</span></td>
+                            <td class="text-end">@(o.TotalPresupuesto.HasValue ? Ui.Dinero(o.TotalPresupuesto) : "—")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="panel">
+            <h2>Por estado</h2>
+            @foreach (var e in Model.PorEstado)
+            {
+                <div class="d-flex justify-content-between border-bottom py-1"><span>@e.Key</span><strong>@e.Value</strong></div>
+            }
+            @if (!Model.PorEstado.Any()) { <p class="text-muted mb-0">Sin datos.</p> }
+        </div>
+        <div class="panel">
+            <h2>Carga de mecánicos</h2>
+            <table class="table table-sm mb-0">
+                <thead><tr><th>Mecánico</th><th class="text-center">Activas</th><th class="text-center">Terminadas</th><th class="text-center">Agenda</th></tr></thead>
+                <tbody>
+                @foreach (var m in mecanicos)
+                {
+                    <tr><td>@m.Nombre</td><td class="text-center">@m.OrdenesActivas</td><td class="text-center">@m.OrdenesFinalizadas</td><td class="text-center">@m.AsignacionesFuturas</td></tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        <div class="panel">
+            <h2>Inventario en stock mínimo</h2>
+            @foreach (var r in inv.BajoStock)
+            {
+                <div class="d-flex justify-content-between"><span>@r.Nombre</span><span class="stock-bajo">@r.Existencias / @r.StockMinimo</span></div>
+            }
+            @if (!inv.BajoStock.Any()) { <p class="text-muted mb-0">Ninguno.</p> }
+        </div>
+    </div>
+</div>

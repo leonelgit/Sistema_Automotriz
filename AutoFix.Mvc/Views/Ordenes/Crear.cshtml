@@ -1,0 +1,43 @@
+@model CrearOrdenRequest
+@{ ViewData["Title"] = "Nueva orden de reparación"; }
+<div class="encabezado"><div><h1>Nueva orden</h1><p class="sub">La orden se crea en estado «Recibido». La API rechaza duplicados del mismo vehículo y servicio.</p></div></div>
+<div class="panel" style="max-width:820px">
+    <form asp-action="Crear" method="post" enctype="multipart/form-data">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+        <div class="row g-3">
+            <div class="col-12">
+                <label asp-for="VehiculoId" class="form-label">Vehículo</label>
+                <select asp-for="VehiculoId" asp-items="ViewBag.Vehiculos" class="form-select"><option value="0">— Seleccione —</option></select>
+                <span asp-validation-for="VehiculoId" class="text-danger small"></span>
+                <div class="form-text">¿No aparece? <a asp-controller="Clientes" asp-action="Crear">Registre al cliente</a> y su vehículo primero.</div>
+            </div>
+            <div class="col-md-7">
+                <label asp-for="TipoServicio" class="form-label">Servicio solicitado</label>
+                <input asp-for="TipoServicio" class="form-control" list="servicios" placeholder="Ej.: Cambio de frenos" />
+                <datalist id="servicios">
+                    <option>Cambio de aceite</option><option>Cambio de frenos</option><option>Diagnóstico de motor</option>
+                    <option>Revisión eléctrica</option><option>Alineación y balanceo</option><option>Mantenimiento preventivo</option>
+                </datalist>
+                <span asp-validation-for="TipoServicio" class="text-danger small"></span>
+            </div>
+            <div class="col-md-5">
+                <label asp-for="FechaEstimadaFin" class="form-label">Fecha estimada de finalización</label>
+                <input asp-for="FechaEstimadaFin" type="datetime-local" value="@Ui.ParaInput(Model.FechaEstimadaFin)" class="form-control" />
+            </div>
+            <div class="col-12">
+                <label asp-for="DescripcionProblema" class="form-label">Descripción del problema</label>
+                <textarea asp-for="DescripcionProblema" rows="4" class="form-control"></textarea>
+                <span asp-validation-for="DescripcionProblema" class="text-danger small"></span>
+            </div>
+            <div class="col-12">
+                <label class="form-label">Fotografía de recepción (opcional)</label>
+                <input type="file" name="fotoIngreso" class="form-control" accept=".jpg,.jpeg,.png" />
+                <div class="aviso-archivo text-warning small"></div>
+            </div>
+        </div>
+        <div class="mt-4 d-flex gap-2">
+            <button class="btn btn-primary">Crear orden</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,105 @@
+@model RepuestoDto
+@{
+    ViewData["Title"] = Model.Nombre;
+    var movimientos = (List<MovimientoDto>)ViewBag.Movimientos;
+    var ordenes = (List<OrdenDto>)ViewBag.Ordenes;
+    var gestiona = User.TienePermiso(Permisos.InventarioGestionar);
+    var usa = User.EsAlguno(Roles.Administrador, Roles.Supervisor, Roles.Mecanico);
+}
+<div class="encabezado">
+    <div><h1>@Model.Nombre</h1><p class="sub"><span class="mono">@Model.Codigo</span> · @Model.Categoria · @Model.Marca</p></div>
+    @if (gestiona)
+    {
+        <div class="d-flex gap-2">
+            <a asp-action="Editar" asp-route-id="@Model.Id" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Editar</a>
+            <form asp-action="Eliminar" asp-route-id="@Model.Id" method="post" data-confirmar="¿Eliminar o dar de baja este repuesto?">
+                <button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
+            </form>
+        </div>
+    }
+</div>
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="panel">
+            @if (!string.IsNullOrEmpty(Model.FotoRuta)) { <img src="@Ui.Img(Model.FotoRuta)" alt="Foto del repuesto" class="foto-principal" /> }
+            else { <div class="sin-foto"><span><i class="bi bi-camera"></i> Sin fotografía</span></div> }
+            @if (gestiona)
+            {
+                <form asp-action="Foto" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data" class="mt-3">
+                    <div class="input-group"><input type="file" name="foto" class="form-control" accept=".jpg,.jpeg,.png" /><button class="btn btn-outline-primary">Subir</button></div>
+                    <div class="aviso-archivo text-warning small"></div>
+                </form>
+            }
+            <div class="row text-center mt-3">
+                <div class="col"><div class="cifra @(Model.BajoStock ? "ambar" : "")"><div class="valor @(Model.BajoStock ? "stock-bajo" : "")">@Model.Existencias</div><div class="etiqueta">Existencias</div></div></div>
+                <div class="col"><div class="cifra"><div class="valor">@Model.StockMinimo</div><div class="etiqueta">Stock mínimo</div></div></div>
+            </div>
+            <p class="mt-3 mb-1"><strong>Precio:</strong> @Ui.Dinero(Model.Precio)</p>
+            @if (!string.IsNullOrEmpty(Model.Descripcion)) { <p class="mb-1">@Model.Descripcion</p> }
+            <p class="small text-muted mb-0">Versión (token de concurrencia): <span class="mono">@Model.Version</span></p>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="row g-3">
+            @if (gestiona)
+            {
+                <div class="col-md-6">
+                    <div class="panel h-100">
+                        <h2><i class="bi bi-box-arrow-in-down"></i> Registrar entrada</h2>
+                        <form asp-action="Entrada" asp-route-id="@Model.Id" method="post">
+                            <input type="hidden" name="Version" value="@Model.Version" />
+                            <input type="number" name="Cantidad" min="1" value="1" class="form-control mb-2" required />
+                            <input name="Motivo" class="form-control mb-2" placeholder="Motivo (ej.: compra a proveedor)" />
+                            <button class="btn btn-outline-primary w-100">Registrar entrada</button>
+                        </form>
+                    </div>
+                </div>
+            }
+            @if (usa)
+            {
+                <div class="col-md-6">
+                    <div class="panel h-100">
+                        <h2><i class="bi bi-box-arrow-up"></i> Registrar salida</h2>
+                        <form asp-action="Salida" asp-route-id="@Model.Id" method="post">
+                            <!-- Se envía la versión vista: si otro usuario descontó primero, la API responde 409 -->
+                            <input type="hidden" name="Version" value="@Model.Version" />
+                            <input type="number" name="Cantidad" min="1" value="1" class="form-control mb-2" required />
+                            <select name="OrdenId" class="form-select mb-2">
+                                <option value="">Sin orden asociada</option>
+                                @foreach (var o in ordenes)
+                                {
+                                    <option value="@o.Id">@o.NumeroOrden · @o.VehiculoDescripcion</option>
+                                }
+                            </select>
+                            <input name="Motivo" class="form-control mb-2" placeholder="Motivo" />
+                            <button class="btn btn-primary w-100">Registrar salida</button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="panel mt-3">
+            <h2>Movimientos</h2>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Fecha</th><th>Tipo</th><th class="text-end">Cantidad</th><th class="text-end">Antes</th><th class="text-end">Después</th><th>Motivo</th><th>Orden</th><th>Usuario</th></tr></thead>
+                    <tbody>
+                    @foreach (var m in movimientos)
+                    {
+                        <tr>
+                            <td>@Ui.Fecha(m.Fecha)</td>
+                            <td><span class="badge @(m.Tipo == TipoMovimiento.Entrada ? "text-bg-success" : "text-bg-secondary")">@m.Tipo</span></td>
+                            <td class="text-end">@m.Cantidad</td>
+                            <td class="text-end">@m.ExistenciaAnterior</td>
+                            <td class="text-end">@m.ExistenciaResultante</td>
+                            <td>@m.Motivo</td>
+                            <td>@if (m.OrdenId.HasValue) { <a asp-controller="Ordenes" asp-action="Detalle" asp-route-id="@m.OrdenId">@m.NumeroOrden</a> }</td>
+                            <td>@m.Usuario</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

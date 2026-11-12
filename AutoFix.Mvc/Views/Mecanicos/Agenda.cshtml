@@ -1,0 +1,30 @@
+@model MecanicoDto
+@{
+    ViewData["Title"] = "Agenda de " + Model.Nombre;
+    var asignaciones = (List<AsignacionDto>)ViewBag.Asignaciones;
+}
+<div class="encabezado">
+    <div><h1>Agenda de @Model.Nombre</h1><p class="sub">@(Model.Especialidad ?? "Mecánico") · @Model.OrdenesActivas órdenes activas</p></div>
+    <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Mecánicos</a>
+</div>
+<div class="panel">
+    <p class="small text-muted">La API no permite dos asignaciones vigentes que se crucen (nuevoInicio &lt; finExistente y inicioExistente &lt; nuevoFin).
+        Token de concurrencia actual: <span class="mono">@Model.Version</span></p>
+    <table class="table">
+        <thead><tr><th>Orden</th><th>Estado de la orden</th><th>Inicio</th><th>Fin</th><th>Asignado por</th><th>Vigencia</th></tr></thead>
+        <tbody>
+        @foreach (var a in asignaciones)
+        {
+            <tr class="@(a.Activa ? "" : "text-muted")">
+                <td><a asp-controller="Ordenes" asp-action="Detalle" asp-route-id="@a.OrdenId">@a.NumeroOrden</a></td>
+                <td><span class="estado @Ui.ClaseEstado(a.EstadoOrden)">@a.EstadoOrden.Texto()</span></td>
+                <td>@Ui.Fecha(a.Inicio)</td>
+                <td>@Ui.Fecha(a.Fin)</td>
+                <td>@a.AsignadoPor</td>
+                <td>@(a.Activa ? "Vigente" : "Liberada")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    @if (!asignaciones.Any()) { <p class="text-muted mb-0">Sin asignaciones.</p> }
+</div>

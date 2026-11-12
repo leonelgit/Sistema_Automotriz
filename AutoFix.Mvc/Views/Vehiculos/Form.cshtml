@@ -1,0 +1,41 @@
+@model VehiculoSaveDto
+@{
+    int? id = ViewBag.Id;
+    string? foto = ViewBag.FotoRuta;
+    ViewData["Title"] = id.HasValue ? "Editar vehículo" : "Nuevo vehículo";
+}
+<div class="encabezado"><h1>@ViewData["Title"]</h1></div>
+<div class="panel" style="max-width:820px">
+    <form asp-action="@(id.HasValue ? "Editar" : "Crear")" asp-route-id="@id" method="post" enctype="multipart/form-data">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+        <div class="row g-3">
+            <div class="col-12">
+                <label asp-for="ClienteId" class="form-label">Cliente propietario</label>
+                <select asp-for="ClienteId" asp-items="ViewBag.Clientes" class="form-select">
+                    <option value="0">— Seleccione —</option>
+                </select>
+                <span asp-validation-for="ClienteId" class="text-danger small"></span>
+            </div>
+            <div class="col-md-4"><label asp-for="Placa" class="form-label">Placa</label><input asp-for="Placa" class="form-control text-uppercase" /><span asp-validation-for="Placa" class="text-danger small"></span></div>
+            <div class="col-md-4"><label asp-for="Marca" class="form-label">Marca</label><input asp-for="Marca" class="form-control" /><span asp-validation-for="Marca" class="text-danger small"></span></div>
+            <div class="col-md-4"><label asp-for="Modelo" class="form-label">Modelo</label><input asp-for="Modelo" class="form-control" /><span asp-validation-for="Modelo" class="text-danger small"></span></div>
+            <div class="col-md-4"><label asp-for="Anio" class="form-label">Año</label><input asp-for="Anio" class="form-control" /><span asp-validation-for="Anio" class="text-danger small"></span></div>
+            <div class="col-md-4"><label asp-for="Color" class="form-label">Color</label><input asp-for="Color" class="form-control" /><span asp-validation-for="Color" class="text-danger small"></span></div>
+            <div class="col-md-4"><label asp-for="NumeroChasis" class="form-label">Número de chasis</label><input asp-for="NumeroChasis" class="form-control text-uppercase" /><span asp-validation-for="NumeroChasis" class="text-danger small"></span></div>
+            <div class="col-12">
+                <label class="form-label">Fotografía del vehículo (JPG/PNG, máx. 5 MB)</label>
+                @if (!string.IsNullOrEmpty(foto)) { <div class="mb-2"><img src="@Ui.Img(foto)" alt="Foto actual" style="max-height:120px;border-radius:6px" /></div> }
+                <input type="file" name="foto" class="form-control" accept=".jpg,.jpeg,.png" />
+                <div class="aviso-archivo text-warning small"></div>
+            </div>
+        </div>
+        <div class="mt-4 d-flex flex-wrap gap-2">
+            <button class="btn btn-primary">Guardar</button>
+            @if (!id.HasValue)
+            {
+                <button class="btn btn-outline-primary" name="siguiente" value="otro">Guardar y agregar otro vehículo</button>
+            }
+            <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>

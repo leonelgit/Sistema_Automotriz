@@ -1,0 +1,18 @@
+@model MecanicoSaveDto
+@{
+    int? id = ViewBag.Id;
+    ViewData["Title"] = id.HasValue ? "Editar mecánico" : "Nuevo mecánico";
+}
+<div class="encabezado"><h1>@ViewData["Title"]</h1></div>
+<div class="panel" style="max-width:640px">
+    <form asp-action="@(id.HasValue ? "Editar" : "Crear")" asp-route-id="@id" method="post">
+        <input type="hidden" asp-for="Version" />
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+        <div class="mb-3"><label asp-for="Nombre" class="form-label">Nombre</label><input asp-for="Nombre" class="form-control" /><span asp-validation-for="Nombre" class="text-danger small"></span></div>
+        <div class="mb-3"><label asp-for="Especialidad" class="form-label">Especialidad</label><input asp-for="Especialidad" class="form-control" /></div>
+        <div class="mb-3"><label asp-for="Telefono" class="form-label">Teléfono</label><input asp-for="Telefono" class="form-control" /></div>
+        <div class="form-check mb-3"><input asp-for="Activo" class="form-check-input" /><label asp-for="Activo" class="form-check-label">Activo</label></div>
+        <button class="btn btn-primary">Guardar</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+    </form>
+</div>
