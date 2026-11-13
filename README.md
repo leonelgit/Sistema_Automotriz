@@ -201,4 +201,13 @@ El menú y los botones se muestran según el rol, pero la seguridad real está e
 
 Las capturas y videos de las 12 pruebas se guardan en la carpeta [`evidencias/`](evidencias/).
 
-<!-- Agregar aquí las capturas de las pruebas obligatorias -->
+| Prueba | Captura |
+|---|---|
+| 1. Cliente con dos vehículos | ![](evidencias/01-cliente-dos-vehiculos.png) |
+| 2. Orden en estado Recibido | ![](evidencias/02-orden-recibido.png) |
+| 3. Mecánico asignado | ![](evidencias/03-mecanico-asignado.png) |
+| 4. Modificar orden sin permisos → 403 | ![](evidencias/04-modificar-sin-permiso-403.png) |
+| 5. Presupuesto con subtotales y total | ![](evidencias/05-presupuesto-subtotales-total.png) |
+| 6. Aprobar sin claim `Ordenes.Aprobar` → 403 | ![](evidencias/06b-aprobar-sin-claim-403.png) |
+
+Las pruebas restantes (6 a 12) están listadas como pendientes en [`evidencias/README.md`](evidencias/README.md).
