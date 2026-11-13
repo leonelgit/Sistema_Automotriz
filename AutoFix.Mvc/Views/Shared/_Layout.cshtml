@@ -4,27 +4,48 @@
     string Activo(string c, string? a = null) => ctrl == c && (a == null || act == a) ? "activo" : "";
     var esCliente = User.IsInRole(Roles.Cliente);
     var esEmpleado = User.EsEmpleado();
+
+    // Breadcrumb section label per controller (display only)
+    var secciones = new Dictionary<string, string>
+    {
+        ["Clientes"] = esCliente ? "Mi cuenta" : "Recepción", ["Vehiculos"] = esCliente ? "Mi cuenta" : "Recepción",
+        ["Ordenes"] = esCliente ? "Mi cuenta" : "Taller", ["Presupuestos"] = esCliente ? "Mi cuenta" : "Taller",
+        ["Mecanicos"] = "Taller", ["Evidencias"] = "Taller",
+        ["Inventario"] = "Inventario", ["Movimientos"] = "Inventario",
+        ["Reportes"] = "Control", ["Usuarios"] = "Control"
+    };
+    var seccion = ctrl != null && secciones.TryGetValue(ctrl, out var sec) ? sec : null;
+
+    var nombre = User.Nombre();
+    var iniciales = string.Concat(nombre.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpperInvariant(p[0])));
+    if (iniciales.Length == 0) iniciales = "?";
 }
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f1f36" />
     <title>@ViewData["Title"] · AutoFix</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
+<a class="skip-link" href="#contenido">Saltar al contenido</a>
 <div class="af-shell">
-    <aside class="af-sidebar">
-        <div class="af-marca">
-            <div class="nombre"><i class="bi bi-wrench-adjustable"></i> AutoFix</div>
-            <div class="lema">Centro de servicio automotriz</div>
-        </div>
-        <nav class="af-nav">
+    <aside class="af-sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="afSidebar" aria-label="Navegación principal">
+        <a class="af-marca" asp-controller="Home" asp-action="Index" aria-label="AutoFix, ir al dashboard">
+            <span class="af-logo"><i class="bi bi-wrench-adjustable"></i></span>
+            <span>
+                <span class="nombre d-block">AutoFix</span>
+                <span class="lema d-block">Centro de servicio automotriz</span>
+            </span>
+        </a>
+        <nav class="af-nav" aria-label="Menú">
             <a class="@Activo("Home")" asp-controller="Home" asp-action="Index"><i class="bi bi-speedometer2"></i> Dashboard</a>
 
             @if (esCliente)
@@ -62,19 +83,51 @@
                 <a class="@Activo("Usuarios")" asp-controller="Usuarios" asp-action="Index"><i class="bi bi-shield-lock"></i> Usuarios</a>
             }
         </nav>
-        <div class="af-usuario">
-            <div>@User.Nombre()</div>
-            <div class="rol">@User.Rol()</div>
-            <form asp-controller="Account" asp-action="Logout" method="post" class="mt-2">
-                <button class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</button>
-            </form>
-        </div>
+        <div class="af-sidebar-pie">AutoFix &copy; @DateTime.Now.Year</div>
     </aside>
 
-    <main class="af-main">
-        <partial name="_Alertas" />
-        @RenderBody()
-    </main>
+    <div class="af-contenido">
+        <header class="af-topbar">
+            <button class="menu-toggle d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#afSidebar" aria-controls="afSidebar" aria-label="Abrir menú de navegación">
+                <i class="bi bi-list"></i>
+            </button>
+            <div class="af-page-title">
+                @if (seccion != null)
+                {
+                    <div class="crumb"><a asp-controller="Home" asp-action="Index">Inicio</a><i class="bi bi-chevron-right" style="font-size:.6rem"></i><span>@seccion</span></div>
+                }
+                <p class="titulo-pagina">@ViewData["Title"]</p>
+            </div>
+
+            <div class="dropdown ms-auto">
+                <button class="af-user-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Menú de usuario: @nombre">
+                    <span class="af-avatar" aria-hidden="true">@iniciales</span>
+                    <span class="af-user-info d-none d-sm-block">
+                        <span class="n">@nombre</span>
+                        <span class="badge-rol">@User.Rol()</span>
+                    </span>
+                    <i class="bi bi-chevron-down small text-muted d-none d-sm-inline" aria-hidden="true"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" style="min-width:220px">
+                    <li class="px-3 py-2">
+                        <div class="fw-semibold">@nombre</div>
+                        <span class="badge-rol">@User.Rol()</span>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form asp-controller="Account" asp-action="Logout" method="post">
+                            <button class="dropdown-item"><i class="bi bi-box-arrow-right"></i>Cerrar sesión</button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </header>
+
+        <main class="af-main" id="contenido">
+            <partial name="_Alertas" />
+            @RenderBody()
+        </main>
+    </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="~/js/site.js" asp-append-version="true"></script>

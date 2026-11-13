@@ -1,42 +1,120 @@
 @model LoginRequest
+@inject IWebHostEnvironment Env
+@inject IConfiguration Config
 @{
     ViewData["Title"] = "Iniciar sesión";
     Layout = "_LayoutPublico";
+
+    // Quick-access demo accounts: rendered only in Development and only when configured.
+    var cuentasDemo = Env.IsDevelopment()
+        ? Config.GetSection("DemoAccounts").GetChildren()
+            .Select(c => new { Rol = c["Role"] ?? "", Email = c["Email"] ?? "", Clave = c["Password"] ?? "", Descripcion = c["Description"] ?? "" })
+            .Where(c => c.Email.Length > 0 && c.Clave.Length > 0)
+            .ToList()
+        : null;
+
+    string IconoRol(string rol) => rol.Split(' ')[0] switch
+    {
+        "Administrador" => "bi-shield-lock",
+        "Recepcionista" => "bi-person-badge",
+        "Mecánico" => "bi-wrench-adjustable",
+        "Supervisor" => "bi-clipboard2-check",
+        "Cliente" => "bi-person",
+        _ => "bi-person-circle"
+    };
 }
 <div class="login-fondo">
     <section class="login-lado">
-        <div>
-            <div class="nombre"><i class="bi bi-wrench-adjustable"></i> AutoFix</div>
-            <p class="mt-2 fs-5">Órdenes de reparación, presupuestos, inventario y evidencias del taller en un solo lugar.</p>
+        <div class="marca">
+            <span class="af-logo"><i class="bi bi-wrench-adjustable"></i></span>
+            <span class="nombre">AutoFix</span>
         </div>
-        <ul class="list-unstyled small mb-0" style="color:#a9bbd1">
-            <li><i class="bi bi-check2"></i> Seguimiento del vehículo paso a paso</li>
-            <li><i class="bi bi-check2"></i> Fotografías antes y después</li>
-            <li><i class="bi bi-check2"></i> Inventario sin existencias negativas</li>
+        <div>
+            <h2>Todo el taller, <em>bajo control</em>.</h2>
+            <p class="lead-texto">Órdenes de reparación, presupuestos, inventario y evidencias en un solo lugar.</p>
+        </div>
+        <ul class="login-beneficios">
+            <li><span class="ico"><i class="bi bi-signpost-split"></i></span> Seguimiento del vehículo paso a paso</li>
+            <li><span class="ico"><i class="bi bi-camera"></i></span> Fotografías antes y después de la reparación</li>
+            <li><span class="ico"><i class="bi bi-box-seam"></i></span> Inventario sin existencias negativas</li>
         </ul>
     </section>
+
     <section class="login-form">
-        <div class="panel">
-            <h1 class="h3 mb-1">Iniciar sesión</h1>
-            <p class="text-muted">Use su correo y contraseña.</p>
-            <partial name="_Alertas" />
-            <form asp-action="Login" method="post">
-                <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
-                <div class="mb-3">
-                    <label asp-for="Email" class="form-label">Correo</label>
-                    <input asp-for="Email" class="form-control" autocomplete="username" autofocus />
-                    <span asp-validation-for="Email" class="text-danger small"></span>
+        <div class="contenedor">
+            <div class="login-marca-movil"><span class="af-logo"><i class="bi bi-wrench-adjustable"></i></span> AutoFix</div>
+            <div class="tarjeta">
+                <h1>Iniciar sesión</h1>
+                <p class="text-muted mb-4">Use su correo y contraseña para continuar.</p>
+                <partial name="_Alertas" />
+                <form asp-action="Login" method="post" id="formLogin">
+                    <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label">Correo</label>
+                        <div class="input-icono">
+                            <i class="bi bi-envelope" aria-hidden="true"></i>
+                            <input asp-for="Email" class="form-control" autocomplete="username" autofocus />
+                        </div>
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-4">
+                        <label asp-for="Password" class="form-label">Contraseña</label>
+                        <div class="input-icono">
+                            <i class="bi bi-lock" aria-hidden="true"></i>
+                            <input asp-for="Password" type="password" class="form-control" autocomplete="current-password" />
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+                    <button class="btn btn-primary w-100">Entrar</button>
+                </form>
+                <hr class="my-4" />
+                <p class="small mb-0 text-center">¿Es cliente y no tiene cuenta? <a asp-action="Registro" class="fw-semibold">Regístrese aquí</a></p>
+            </div>
+
+            @if (cuentasDemo is { Count: > 0 })
+            {
+                <div class="acceso-rapido" id="accesoRapido">
+                    <div class="titulo"><i class="bi bi-lightning-charge-fill"></i> Acceso rápido · entorno de pruebas <span class="badge">Solo desarrollo</span></div>
+                    <div class="acceso-grid">
+                        @foreach (var c in cuentasDemo)
+                        {
+                            <button type="button" class="acceso-card" data-demo-email="@c.Email" data-demo-password="@c.Clave" aria-label="Entrar como @c.Rol (@c.Email)">
+                                <span class="ico"><i class="bi @IconoRol(c.Rol)" aria-hidden="true"></i></span>
+                                <span class="txt">
+                                    <span class="rol">@c.Rol</span>
+                                    <span class="mail">@c.Email</span>
+                                    <span class="desc">@c.Descripcion</span>
+                                    <span class="clave mono">@c.Clave</span>
+                                </span>
+                            </button>
+                        }
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label asp-for="Password" class="form-label">Contraseña</label>
-                    <input asp-for="Password" type="password" class="form-control" autocomplete="current-password" />
-                    <span asp-validation-for="Password" class="text-danger small"></span>
-                </div>
-                <button class="btn btn-primary w-100">Entrar</button>
-            </form>
-            <hr />
-            <p class="small mb-0">¿Es cliente y no tiene cuenta? <a asp-action="Registro">Regístrese aquí</a>.</p>
+            }
         </div>
     </section>
 </div>
+
+@section Scripts {
+    @if (cuentasDemo is { Count: > 0 })
+    {
+        <script>
+            // One-click demo login: fill the real form and submit it (antiforgery token and returnUrl are preserved).
+            (function () {
+                var form = document.getElementById('formLogin');
+                var email = document.getElementById('Email');
+                var password = document.getElementById('Password');
+                if (!form || !email || !password) return;
+                document.querySelectorAll('[data-demo-email]').forEach(function (card) {
+                    card.addEventListener('click', function () {
+                        email.value = card.getAttribute('data-demo-email');
+                        password.value = card.getAttribute('data-demo-password');
+                        document.querySelectorAll('[data-demo-email]').forEach(function (b) { b.disabled = true; });
+                        form.requestSubmit();
+                    });
+                });
+            })();
+        </script>
+    }
+}
